@@ -14,6 +14,8 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 public class ZarazekNemosClient implements ClientModInitializer {
 
@@ -35,8 +37,24 @@ public class ZarazekNemosClient implements ClientModInitializer {
             if (!world.isClient() || hand != Hand.MAIN_HAND) return ActionResult.PASS;
             if (!player.getMainHandStack().isOf(Items.COBWEB)) return ActionResult.PASS;
 
-            BlockState target = world.getBlockState(hitResult.getBlockPos());
-            if (!(target.isOf(Blocks.LEVER) || target.isIn(BlockTags.BUTTONS))) return ActionResult.PASS;
+            BlockPos clicked = hitResult.getBlockPos();
+            boolean found = isLeverOrButton(world.getBlockState(clicked))
+                    || isLeverOrButton(world.getBlockState(clicked.offset(hitResult.getSide())));
+
+            if (!found) {
+                // sprawdz kazda kratke, przez ktora przechodzi promien od oczu do trafionego bloku
+                Vec3d eye = player.getEyePos();
+                Vec3d look = player.getRotationVec(1.0f);
+                double dist = eye.distanceTo(hitResult.getPos());
+                for (double t = 0; t <= dist + 0.05; t += 0.02) {
+                    BlockPos bp = BlockPos.ofFloored(eye.add(look.multiply(t)));
+                    if (isLeverOrButton(world.getBlockState(bp))) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (!found) return ActionResult.PASS;
 
             if (state != State.IDLE) return ActionResult.FAIL;
 
@@ -88,25 +106,4 @@ public class ZarazekNemosClient implements ClientModInitializer {
             }
             case PLACE_WEB -> {
                 HitResult hit = client.crosshairTarget;
-                if (hit instanceof BlockHitResult bhr && hit.getType() == HitResult.Type.BLOCK) {
-                    client.interactionManager.interactBlock(player, Hand.MAIN_HAND, bhr);
-                    player.swingHand(Hand.MAIN_HAND);
-                }
-                reset();
-            }
-            default -> reset();
-        }
-    }
-
-    private static void reset() {
-        state = State.IDLE;
-        delay = 0;
-    }
-
-    private static int findWaterInHotbar(PlayerEntity player) {
-        for (int i = 0; i < 9; i++) {
-            if (player.getInventory().getStack(i).isOf(Items.WATER_BUCKET)) return i;
-        }
-        return -1;
-    }
-}
+                if (hit instanceof BlockHitResult bhr &&
