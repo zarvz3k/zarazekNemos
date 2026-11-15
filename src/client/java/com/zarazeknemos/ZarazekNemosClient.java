@@ -63,8 +63,11 @@ public class ZarazekNemosClient implements ClientModInitializer {
             if (!player.getMainHandStack().isOf(Items.COBWEB)) return ActionResult.PASS;
 
             BlockPos clicked = hitResult.getBlockPos();
-            boolean found = isLeverOrButton(world.getBlockState(clicked))
-                    || isLeverOrButton(world.getBlockState(clicked.offset(hitResult.getSide())));
+
+            // klik prosto w dzwignie/guzik -> mod nic nie robi, dzwignia dziala normalnie
+            if (isLeverOrButton(world.getBlockState(clicked))) return ActionResult.PASS;
+
+            boolean found = isLeverOrButton(world.getBlockState(clicked.offset(hitResult.getSide())));
 
             if (!found) {
                 // sprawdz kazda kratke, przez ktora przechodzi promien od oczu do trafionego bloku
