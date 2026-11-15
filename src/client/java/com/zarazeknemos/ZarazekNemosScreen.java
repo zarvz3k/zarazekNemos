@@ -3,12 +3,18 @@ package com.zarazeknemos;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntConsumer;
 
 public class ZarazekNemosScreen extends Screen {
@@ -17,6 +23,7 @@ public class ZarazekNemosScreen extends Screen {
     private static final int PANEL_H = 150;
     private static final int COL_W = 65;
     private static final int MAX_DELAY = 4;
+    private static final long ANIM_MS = 500;
 
     private static final String[] LABELS = {
             "Zmiana slota na wodę",
@@ -28,12 +35,23 @@ public class ZarazekNemosScreen extends Screen {
     private ButtonWidget onButton;
     private ButtonWidget offButton;
 
+    // animacja
+    private final long openTime = Util.getMeasuringTimeMs();
+    private int yOffset = 0;
+    private final Map<ClickableWidget, Integer> baseY = new HashMap<>();
+
     public ZarazekNemosScreen() {
         super(Text.literal("ZarazekNemos"));
     }
 
+    private <T extends ClickableWidget> T track(T widget) {
+        baseY.put(widget, widget.getY());
+        return this.addDrawableChild(widget);
+    }
+
     @Override
     protected void init() {
+        baseY.clear();
         int left = (this.width - PANEL_W) / 2;
         int top = (this.height - PANEL_H) / 2;
 
@@ -47,8 +65,8 @@ public class ZarazekNemosScreen extends Screen {
             refreshButtons();
         }).dimensions(left + 145, top + 58, 125, 20).build();
 
-        this.addDrawableChild(onButton);
-        this.addDrawableChild(offButton);
+        track(onButton);
+        track(offButton);
         refreshButtons();
 
         addDelayField(0, left, top, ZarazekNemosClient.DELAY_AFTER_SWITCH_TO_WATER,
@@ -78,12 +96,41 @@ public class ZarazekNemosScreen extends Screen {
             }
             setter.accept(v);
         });
-        this.addDrawableChild(field);
+        track(field);
     }
 
     private void refreshButtons() {
         onButton.active = !ZarazekNemosClient.enabled;
         offButton.active = ZarazekNemosClient.enabled;
+    }
+
+    // dzwiek tez przy kliknieciu w wyszarzony przycisk
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            for (ButtonWidget b : new ButtonWidget[]{onButton, offButton}) {
+                if (!b.active && b.isMouseOver(mouseX, mouseY)) {
+                    this.client.getSoundManager().play(
+                            PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                }
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        // postep animacji 0..1 z wyhamowaniem (ease-out cubic)
+        float t = Math.min(1.0f, (Util.getMeasuringTimeMs() - openTime) / (float) ANIM_MS);
+        float eased = 1.0f - (float) Math.pow(1.0f - t, 3);
+        int top = (this.height - PANEL_H) / 2;
+        yOffset = (int) ((1.0f - eased) * (this.height - top));
+
+        for (Map.Entry<ClickableWidget, Integer> e : baseY.entrySet()) {
+            e.getKey().setY(e.getValue() + yOffset);
+        }
+
+        super.render(context, mouseX, mouseY, delta);
     }
 
     // Tlo i panel rysujemy tutaj, zeby widgety byly na wierzchu
@@ -92,7 +139,7 @@ public class ZarazekNemosScreen extends Screen {
         super.renderBackground(context, mouseX, mouseY, delta);
 
         int left = (this.width - PANEL_W) / 2;
-        int top = (this.height - PANEL_H) / 2;
+        int top = (this.height - PANEL_H) / 2 + yOffset;
         int right = left + PANEL_W;
         int bottom = top + PANEL_H;
 
