@@ -7,6 +7,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.util.ActionResult;
@@ -22,7 +23,7 @@ public class ZarazekNemosClient implements ClientModInitializer {
     private static int delay = 0;
     private static int webSlot = -1;
 
-    // opóznienia w tickach po kazdym kroku
+    // opoznienia w tickach po kazdym kroku
     private static final int DELAY_AFTER_SWITCH_TO_WATER = 1;
     private static final int DELAY_AFTER_PLACE_WATER = 1;
     private static final int DELAY_AFTER_PICKUP = 1;
@@ -102,7 +103,7 @@ public class ZarazekNemosClient implements ClientModInitializer {
         delay = 0;
     }
 
-    private static int findWaterInHotbar(ClientPlayerEntity player) {
+    private static int findWaterInHotbar(PlayerEntity player) {
         for (int i = 0; i < 9; i++) {
             if (player.getInventory().getStack(i).isOf(Items.WATER_BUCKET)) return i;
         }
