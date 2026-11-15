@@ -109,11 +109,18 @@ public class ZarazekNemosClient implements ClientModInitializer {
             return;
         }
 
-        if (delay > 0) {
-            delay--;
-            return;
+        // wykonuj kolejne kroki w tym samym ticku, dopoki delay = 0
+        int guard = 0;
+        while (state != State.IDLE && guard++ < 6) {
+            if (delay > 0) {
+                delay--;
+                return;
+            }
+            step(client, player);
         }
+    }
 
+    private void step(MinecraftClient client, ClientPlayerEntity player) {
         switch (state) {
             case PLACE_WATER -> {
                 client.interactionManager.interactItem(player, Hand.MAIN_HAND);
