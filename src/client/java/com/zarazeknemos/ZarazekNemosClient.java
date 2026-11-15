@@ -106,4 +106,29 @@ public class ZarazekNemosClient implements ClientModInitializer {
             }
             case PLACE_WEB -> {
                 HitResult hit = client.crosshairTarget;
-                if (hit instanceof BlockHitResult bhr &&
+                if (hit instanceof BlockHitResult bhr && hit.getType() == HitResult.Type.BLOCK) {
+                    client.interactionManager.interactBlock(player, Hand.MAIN_HAND, bhr);
+                    player.swingHand(Hand.MAIN_HAND);
+                }
+                reset();
+            }
+            default -> reset();
+        }
+    }
+
+    private static void reset() {
+        state = State.IDLE;
+        delay = 0;
+    }
+
+    private static boolean isLeverOrButton(BlockState s) {
+        return s.isOf(Blocks.LEVER) || s.isIn(BlockTags.BUTTONS);
+    }
+
+    private static int findWaterInHotbar(PlayerEntity player) {
+        for (int i = 0; i < 9; i++) {
+            if (player.getInventory().getStack(i).isOf(Items.WATER_BUCKET)) return i;
+        }
+        return -1;
+    }
+}
