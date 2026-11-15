@@ -1,6 +1,8 @@
 package com.zarazeknemos;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.BlockState;
@@ -21,6 +23,10 @@ public class ZarazekNemosClient implements ClientModInitializer {
 
     private enum State { IDLE, PLACE_WATER, PICKUP_WATER, SWITCH_TO_WEB, PLACE_WEB }
 
+    // domyslnie wylaczony
+    public static boolean enabled = false;
+    private static boolean openConfig = false;
+
     private static State state = State.IDLE;
     private static int delay = 0;
     private static int webSlot = -1;
@@ -33,7 +39,26 @@ public class ZarazekNemosClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+
+        // komenda /zn config
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+                dispatcher.register(ClientCommandManager.literal("zn")
+                        .then(ClientCommandManager.literal("config")
+                                .executes(ctx -> {
+                                    openConfig = true; // ekran otwieramy w nastepnym ticku
+                                    return 1;
+                                }))));
+
+        // otwieranie menu (po zamknieciu czatu)
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (openConfig) {
+                openConfig = false;
+                client.setScreen(new ZarazekNemosScreen());
+            }
+        });
+
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            if (!enabled) return ActionResult.PASS;
             if (!world.isClient() || hand != Hand.MAIN_HAND) return ActionResult.PASS;
             if (!player.getMainHandStack().isOf(Items.COBWEB)) return ActionResult.PASS;
 
