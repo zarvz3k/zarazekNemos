@@ -32,10 +32,10 @@ public class ZarazekNemosClient implements ClientModInitializer {
     private static int webSlot = -1;
 
     // opoznienia w tickach po kazdym kroku
-    private static final int DELAY_AFTER_SWITCH_TO_WATER = 0;
-    private static final int DELAY_AFTER_PLACE_WATER = 0;
-    private static final int DELAY_AFTER_PICKUP = 0;
-    private static final int DELAY_AFTER_SWITCH_TO_WEB = 0;
+    public static int DELAY_AFTER_SWITCH_TO_WATER = 0;
+    public static int DELAY_AFTER_PLACE_WATER = 0;
+    public static int DELAY_AFTER_PICKUP = 0;
+    public static int DELAY_AFTER_SWITCH_TO_WEB = 0;
 
     @Override
     public void onInitializeClient() {
